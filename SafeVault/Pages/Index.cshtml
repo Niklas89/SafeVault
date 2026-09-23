@@ -1,0 +1,20 @@
+@page "/submit"
+@model SafeVault.Pages.IndexModel
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>SafeVault</title></head>
+<body>
+<h1>SafeVault</h1>
+<form method="post" action="/submit" asp-antiforgery="true">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required minlength="3" maxlength="100" pattern="[A-Za-z0-9_][A-Za-z0-9_.\-]*">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required maxlength="100">
+    <button type="submit">Submit</button>
+</form>
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+</body>
+</html>
