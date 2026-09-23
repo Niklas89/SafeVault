@@ -69,12 +69,12 @@ Stop the running application with Ctrl+C, then run this from the project root (t
 dotnet test SafeVault.slnx
 ```
 
-The expanded suite should report **63 passed, 0 failed**: 35 Activity 1 tests and 28 Activity 2 tests. It sends attack inputs directly to the application and database queries, bypassing browser validation, and checks that existing data remains intact. Tests use isolated in-memory databases, so users saved through the running application remain unchanged.
+The expanded suite should report **68 passed, 0 failed**: 35 Activity 1 tests and 33 authentication, registration, and listing tests. It sends attack inputs directly to the application and database queries, bypassing browser validation, and checks that existing data remains intact. Tests use isolated in-memory databases, so users saved through the running application remain unchanged.
 
 
 NUnit covers normalization, field boundaries, malformed emails, SQL injection payloads, script/event-handler/encoded XSS inputs, legitimate apostrophes, database integrity after rejected submissions, actual Razor output encoding, missing CSRF tokens, and duplicate users. HTTP tests host the real application with WebApplicationFactory; database tests execute real SQLite queries.
 
-Use synthetic data for the local exercises. Authentication and role-based authorization are now implemented; financial-record access is outside this activity. There is no public endpoint listing users or their password hashes.
+Use synthetic data for the local exercises. Authentication and role-based authorization are now implemented; financial-record access is outside this activity. The admin-only page lists usernames and email addresses. Password hashes are never displayed.
 
 Reference: https://learn.microsoft.com/en-us/aspnet/core/security/cross-site-scripting?view=aspnetcore-10.0
 
@@ -144,3 +144,13 @@ Activity 2 verification (including signed-in login redirects): all 63 tests pass
 
 
 
+
+## Saved entries and user lists
+
+The Admin Dashboard at `/Admin` lists all rows in Users with username and email, including registered accounts and records entered through `/submit`. It remains restricted to the admin role.
+
+Each signed-in user's `/Dashboard` shows only entries they created through `/submit`, newest first. Ownership comes from the authenticated session, never from a posted field or query parameter. New entries and their ownership records are saved atomically. Displayed values are HTML-encoded.
+
+Startup automatically adds the SubmissionOwners table. Existing records are preserved, but old submissions cannot be attributed to their creators because that information was not previously stored. They appear in the admin list, not in personal dashboards. Registering an account does not count as a saved submission.
+
+To check: sign in, select **Add an entry**, save an unused username and email, and return to your dashboard. The new entry should appear. Sign in as a different account and confirm it does not appear there. Administrators can view the full username/email list at `/Admin`.

@@ -89,6 +89,55 @@ public class AuthenticationTests
             Assert.That(FieldValue(success, name), Is.Empty);
         Assert.That(new AuthenticationService(repository).Authenticate("corrected", values["password"]), Is.Not.Null);
     }
+    [Test]
+    public async Task DashboardShowsOnlyOwnSubmissionsAndIgnoresSuppliedOwner()
+    {
+        var adminId = repository.FindAccount("administrator")!.Id;
+        repository.Add("adminentry", "private-admin@example.com", adminId);
+        repository.Add("legacyentry", "legacy@example.com");
+        using var login = await Login("member");
+        var empty = await client.GetStringAsync("/Dashboard");
+        Assert.That(empty, Does.Contain("You have not saved any entries yet."));
+        using var saved = await Post("/submit", new()
+        {
+            ["username"] = "myentry", ["email"] = "o'connor@example.com",
+            ["ownerUserId"] = adminId.ToString()
+        });
+        Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var html = await client.GetStringAsync($"/Dashboard?ownerUserId={adminId}");
+        Assert.That(html, Does.Contain("myentry").And.Contain("o&#x27;connor@example.com"));
+        Assert.That(html, Does.Not.Contain("private-admin@example.com").And.Not.Contain("legacy@example.com"));
+        Assert.That(repository.GetSubmissions(adminId).Select(x => x.Username), Does.Not.Contain("myentry"));
+    }
+
+    [Test]
+    public async Task AdminListsAllUsersAndLegacyRecordsWithoutPasswordHashes()
+    {
+        repository.Add("legacyentry", "legacy@example.com");
+        using var login = await Login("administrator");
+        var html = await client.GetStringAsync("/Admin");
+        Assert.That(html, Does.Contain("member@example.com").And.Contain("admin@example.com").And.Contain("legacy@example.com"));
+        Assert.That(html, Does.Not.Contain(repository.FindAccount("member")!.PasswordHash));
+    }
+
+    [Test]
+    public async Task SavedListsEncodeLegacyDatabaseValues()
+    {
+        var ownerId = repository.FindAccount("administrator")!.Id;
+        repository.Add("legacyentry", "legacy@example.com", ownerId);
+        // Simulate unsafe historical data bypassing today's input validation.
+        using var command = keeper.CreateCommand();
+        command.CommandText = "UPDATE Users SET Email = @email WHERE Username = 'legacyentry'";
+        command.Parameters.AddWithValue("@email", "<script>alert(1)</script>");
+        command.ExecuteNonQuery();
+        using var login = await Login("administrator");
+        foreach (var path in new[] { "/Admin", "/Dashboard" })
+        {
+            var html = await client.GetStringAsync(path);
+            Assert.That(html, Does.Not.Contain("<script>"));
+            Assert.That(html, Does.Contain("&lt;script&gt;"));
+        }
+    }
     private Task<HttpResponseMessage> Login(string username, string password = Password) =>
         Post("/Login", new() { ["username"] = username, ["password"] = password });
 
@@ -321,6 +370,7 @@ public class AuthenticationTests
         Assert.That(repository.FindAccount("member"), Is.EqualTo(previous));
     }
 }
+
 
 
 

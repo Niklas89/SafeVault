@@ -3,5 +3,23 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>SafeVault — Admin</title><link rel="icon" href="/favicon.ico" type="image/x-icon"></head>
 <body><h1>Admin Dashboard</h1><p>Administrator access granted.</p>
-<p><a href="/Dashboard">Your dashboard</a></p></body></html>
+<h2>All users</h2>
+@if (Model.Users.Count == 0)
+{
+    <p>No users yet.</p>
+}
+else
+{
+    <table>
+        <caption>All saved usernames and email addresses</caption>
+        <thead><tr><th scope="col">Username</th><th scope="col">Email</th></tr></thead>
+        <tbody>
+        @foreach (var entry in Model.Users)
+        {
+            <tr><td>@entry.Username</td><td>@entry.Email</td></tr>
+        }
+        </tbody>
+    </table>
+}<p><a href="/Dashboard">Your dashboard</a></p></body></html>
+
 

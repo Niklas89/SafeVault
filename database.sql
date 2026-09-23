@@ -12,3 +12,11 @@ CREATE TABLE IF NOT EXISTS Accounts (
     PasswordHash TEXT NOT NULL,
     Role TEXT NOT NULL CHECK(Role IN ('user', 'admin'))
 );
+
+-- New submissions are linked to the authenticated account that created them.
+-- Legacy rows remain unassigned because their creator was not recorded.
+CREATE TABLE IF NOT EXISTS SubmissionOwners (
+    UserID INTEGER PRIMARY KEY REFERENCES Users(UserID),
+    OwnerUserID INTEGER NOT NULL REFERENCES Accounts(UserID)
+);
+CREATE INDEX IF NOT EXISTS IX_SubmissionOwners_Owner ON SubmissionOwners(OwnerUserID);

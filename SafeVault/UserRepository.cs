@@ -26,22 +26,56 @@ public sealed class UserRepository(string connectionString)
                 PasswordHash TEXT NOT NULL,
                 Role TEXT NOT NULL CHECK(Role IN ('user', 'admin'))
             );
+            CREATE TABLE IF NOT EXISTS SubmissionOwners (
+                UserID INTEGER PRIMARY KEY REFERENCES Users(UserID),
+                OwnerUserID INTEGER NOT NULL REFERENCES Accounts(UserID)
+            );
+            CREATE INDEX IF NOT EXISTS IX_SubmissionOwners_Owner ON SubmissionOwners(OwnerUserID);
             """;
         command.ExecuteNonQuery();
     }
 
-    public void Add(string? username, string? email)
+    public void Add(string? username, string? email, long? ownerUserId = null)
     {
         if (!InputValidation.TryValidate(username, email, out var input))
             throw new ArgumentException("Invalid username or email.");
         using var connection = Open();
+        using var transaction = connection.BeginTransaction();
         using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO Users (Username, Email) VALUES (@username, @email)";
+        command.Transaction = transaction;
+        command.CommandText = "INSERT INTO Users (Username, Email) VALUES (@username, @email) RETURNING UserID";
         command.Parameters.Add("@username", SqliteType.Text).Value = input!.Username;
         command.Parameters.Add("@email", SqliteType.Text).Value = input.Email;
-        command.ExecuteNonQuery();
+        var id = (long)command.ExecuteScalar()!;
+        if (ownerUserId.HasValue)
+        {
+            using var ownership = connection.CreateCommand();
+            ownership.Transaction = transaction;
+            ownership.CommandText = "INSERT INTO SubmissionOwners (UserID, OwnerUserID) VALUES (@id, @owner)";
+            ownership.Parameters.AddWithValue("@id", id);
+            ownership.Parameters.AddWithValue("@owner", ownerUserId.Value);
+            ownership.ExecuteNonQuery();
+        }
+        transaction.Commit();
     }
 
+    public IReadOnlyList<UserInput> GetAllUsers() => ReadUsers(null);
+
+    public IReadOnlyList<UserInput> GetSubmissions(long ownerUserId) => ReadUsers(ownerUserId);
+
+    private IReadOnlyList<UserInput> ReadUsers(long? ownerUserId)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = ownerUserId.HasValue
+            ? "SELECT u.Username, u.Email FROM Users u JOIN SubmissionOwners s ON s.UserID = u.UserID WHERE s.OwnerUserID = @owner ORDER BY u.UserID DESC"
+            : "SELECT Username, Email FROM Users ORDER BY Username";
+        if (ownerUserId.HasValue) command.Parameters.AddWithValue("@owner", ownerUserId.Value);
+        using var reader = command.ExecuteReader();
+        var users = new List<UserInput>();
+        while (reader.Read()) users.Add(new UserInput(reader.GetString(0), reader.GetString(1)));
+        return users;
+    }
     // Called only by registration (fixed user role) or the trusted local admin command.
     public void CreateAccount(string? username, string? email, string password, string role = "user")
     {
@@ -91,4 +125,5 @@ public sealed class UserRepository(string connectionString)
         return reader.Read() ? new UserInput(reader.GetString(0), reader.GetString(1)) : null;
     }
 }
+
 
