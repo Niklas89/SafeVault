@@ -1,0 +1,10 @@
+@page
+@model SafeVault.Pages.DashboardModel
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SafeVault — Dashboard</title><link rel="icon" href="/favicon.ico" type="image/x-icon"></head>
+<body><h1>Your dashboard</h1><p>Signed in as @User.Identity?.Name.</p>
+<p><a href="/submit">Activity 1 input form</a></p>
+@if (User.IsInRole("admin")) { <p><a href="/Admin">Admin Dashboard</a></p> }
+<form method="post" action="/Logout" asp-antiforgery="true"><button type="submit">Sign out</button></form>
+</body></html>
+

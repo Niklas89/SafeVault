@@ -1,0 +1,16 @@
+@page
+@model SafeVault.Pages.LoginModel
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SafeVault — Sign in</title><link rel="icon" href="/favicon.ico" type="image/x-icon"></head>
+<body><h1>Sign in to SafeVault</h1>
+<form method="post" asp-antiforgery="true">
+<label for="username">Username</label>
+<input id="username" name="username" required maxlength="100" autocomplete="username">
+<label for="password">Password</label>
+<input type="password" id="password" name="password" required autocomplete="current-password">
+<button type="submit">Sign in</button>
+</form>
+@if (Model.Error is not null) { <p role="alert">@Model.Error</p> }
+<p><a href="/Register">Create an account</a></p>
+</body></html>
+

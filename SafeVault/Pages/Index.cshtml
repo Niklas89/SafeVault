@@ -2,9 +2,9 @@
 @model SafeVault.Pages.IndexModel
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>SafeVault</title></head>
+<head><meta charset="utf-8"><title>SafeVault</title><link rel="icon" href="/favicon.ico" type="image/x-icon"></head>
 <body>
-<h1>SafeVault</h1>
+<h1>SafeVault</h1><p><a href="/Dashboard">Your dashboard</a></p>
 <form method="post" action="/submit" asp-antiforgery="true">
     <label for="username">Username</label>
     <input type="text" id="username" name="username" required minlength="3" maxlength="100" pattern="[A-Za-z0-9_][A-Za-z0-9_.\-]*">
@@ -18,3 +18,5 @@
 }
 </body>
 </html>
+
+

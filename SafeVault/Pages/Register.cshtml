@@ -1,0 +1,20 @@
+@page
+@model SafeVault.Pages.RegisterModel
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SafeVault — Register</title><link rel="icon" href="/favicon.ico" type="image/x-icon"></head>
+<body><h1>Create a SafeVault account</h1>
+<p>Use a username of 3–100 letters, digits, dots, underscores or hyphens, beginning with a letter, digit or underscore.</p>
+<p>Use 12–72 characters for your password. The maximum may be lower if you use emojis or certain letters from other languages. Spaces count as part of your password.</p>
+<form method="post" asp-antiforgery="true">
+<label for="username">Username</label><input id="username" name="username" value="@Model.Username" required minlength="3" maxlength="100" autocomplete="username">
+<label for="email">Email</label><input type="email" id="email" name="email" value="@Model.Email" required maxlength="100" autocomplete="email">
+<label for="password">Password</label><input type="password" id="password" name="password" value="@Model.Password" required minlength="12" maxlength="72" autocomplete="new-password">
+<label for="confirmPassword">Confirm password</label><input type="password" id="confirmPassword" name="confirmPassword" value="@Model.ConfirmPassword" required minlength="12" maxlength="72" autocomplete="new-password">
+<button type="submit">Register</button>
+</form>
+@if (Model.Message is not null) { <p role="status">@Model.Message</p> }
+<p><a href="/Login">Sign in</a></p>
+</body></html>
+
+
+

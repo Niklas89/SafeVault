@@ -3,3 +3,4 @@
 **/App_Data/
 **/TestResults/
 .vs/
+.artifacts/

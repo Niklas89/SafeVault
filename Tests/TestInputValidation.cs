@@ -66,21 +66,29 @@ public class SecurityIntegrationTests
     private HttpClient client = null!;
 
     [SetUp]
-    public void SetUp()
+    public async Task SetUp()
     {
         var connectionString = $"Data Source=test-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         keeper = new SqliteConnection(connectionString);
         keeper.Open();
         repository = new UserRepository(connectionString);
         repository.Initialize();
-        repository.Add("alice", "alice@example.com");
+        repository.CreateAccount("alice", "alice@example.com", "Regression-password-42!");
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services =>
+            builder.UseEnvironment("Development").ConfigureServices(services =>
             {
                 services.RemoveAll<UserRepository>();
                 services.AddSingleton(repository);
             }));
         client = factory.CreateClient();
+        var loginForm = await client.GetStringAsync("/Login");
+        var loginToken = Regex.Match(loginForm, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
+        using var loginResponse = await client.PostAsync("/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["username"] = "alice", ["password"] = "Regression-password-42!",
+            ["__RequestVerificationToken"] = WebUtility.HtmlDecode(loginToken.Groups[1].Value)
+        }));
+        Assert.That(loginResponse.IsSuccessStatusCode, Is.True);
     }
 
     [TearDown]
@@ -167,3 +175,4 @@ public class SecurityIntegrationTests
         Assert.That(repository.FindByUsername("alice")?.Email, Is.EqualTo("alice@example.com"));
     }
 }
+
