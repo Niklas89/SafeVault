@@ -6,7 +6,7 @@ public sealed class UserRepository(string connectionString)
 {
     private SqliteConnection Open()
     {
-        var connection = new SqliteConnection(connectionString);
+        var connection = new SqliteConnection(new SqliteConnectionStringBuilder(connectionString) { ForeignKeys = true }.ToString());
         connection.Open();
         return connection;
     }
@@ -125,5 +125,6 @@ public sealed class UserRepository(string connectionString)
         return reader.Read() ? new UserInput(reader.GetString(0), reader.GetString(1)) : null;
     }
 }
+
 
 

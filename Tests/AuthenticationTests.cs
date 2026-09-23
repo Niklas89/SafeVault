@@ -11,7 +11,7 @@ using SafeVault;
 namespace SafeVault.Tests;
 
 [TestFixture]
-public class AuthenticationTests
+public partial class AuthenticationTests
 {
     private const string Password = "Correct-password-42!";
     private SqliteConnection keeper = null!;
@@ -370,6 +370,7 @@ public class AuthenticationTests
         Assert.That(repository.FindAccount("member"), Is.EqualTo(previous));
     }
 }
+
 
 
 

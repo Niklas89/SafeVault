@@ -1,4 +1,4 @@
-# SafeVault — Activities 1 and 2
+# SafeVault — Activities 1, 2 and 3
 
 A runnable .NET 10 Razor Pages application with NUnit security tests.
 
@@ -6,7 +6,7 @@ A runnable .NET 10 Razor Pages application with NUnit security tests.
 
 SafeVault is an educational web application intended to manage sensitive information, including user credentials and financial records. The scenario places you in the role of lead developer responsible for protecting the application against common attacks while preserving data integrity.
 
-This project implements the first two of three security activities. Activity 1 establishes input validation, parameterized database queries, and XSS defenses. Activity 2 adds account registration, password authentication, session cookies, and authorization for user and admin roles. Financial-record management is not implemented; Activity 3 will further debug and harden these security layers.
+This project implements all three security activities. Activity 1 establishes input validation, parameterized database queries, and XSS defenses. Activity 2 adds account registration, password authentication, session cookies, and authorization for user and admin roles. Financial-record management is not implemented; Activity 3 reviews and tests these protections and fixes stale authorization sessions and repository integrity enforcement.
 
 ## Activity 1 instructions
 
@@ -69,7 +69,7 @@ Stop the running application with Ctrl+C, then run this from the project root (t
 dotnet test SafeVault.slnx
 ```
 
-The expanded suite should report **68 passed, 0 failed**: 35 Activity 1 tests and 33 authentication, registration, and listing tests. It sends attack inputs directly to the application and database queries, bypassing browser validation, and checks that existing data remains intact. Tests use isolated in-memory databases, so users saved through the running application remain unchanged.
+The expanded suite should report **82 passed, 0 failed**: the previous 68 tests plus 14 Activity 3 security cases. It sends attack inputs directly to the application and database queries, bypassing browser validation, and checks that existing data remains intact. Tests use isolated in-memory databases, so users saved through the running application remain unchanged.
 
 
 NUnit covers normalization, field boundaries, malformed emails, SQL injection payloads, script/event-handler/encoded XSS inputs, legitimate apostrophes, database integrity after rejected submissions, actual Razor output encoding, missing CSRF tokens, and duplicate users. HTTP tests host the real application with WebApplicationFactory; database tests execute real SQLite queries.
@@ -135,7 +135,7 @@ dotnet run --project SafeVault --urls http://localhost:5080
 
 `Tests/AuthenticationTests.cs` uses the real cookie middleware, Razor forms, bcrypt, and isolated SQLite databases. It covers valid and invalid credentials, SQL/script payloads in login, anonymous and role-based access, role escalation attempts at registration, salted hash storage, password limits, legacy records, duplicate registration, CSRF protection, cookie tampering, logout, and rate limiting. Activity 1 HTTP tests now sign in before testing the protected submission form.
 
-This activity does not implement password reset, MFA, email ownership verification, role-management pages, distributed throttling, or server-side revocation of a copied session cookie. Logout removes the browser cookie; a copied ticket remains valid until its 20-minute expiry. Roles in existing tickets reflect the role at login. These are explicit scope limits for the next hardening activity, not claims of production readiness.
+This activity does not implement password reset, MFA, email ownership verification, role-management pages, distributed throttling, or server-side revocation of a copied session cookie. Logout removes the browser cookie; a copied ticket remains valid until its 20-minute expiry. Account identity and role are checked against the database on authenticated requests; deleting the account or changing its role requires a fresh login. These remain explicit scope limits; the review is not a blanket claim of production readiness.
 
 References: [ASP.NET Core cookie authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-10.0), [BCrypt.Net-Next](https://www.nuget.org/packages/BCrypt.Net-Next/4.2.0).
 
@@ -154,3 +154,12 @@ Each signed-in user's `/Dashboard` shows only entries they created through `/sub
 Startup automatically adds the SubmissionOwners table. Existing records are preserved, but old submissions cannot be attributed to their creators because that information was not previously stored. They appear in the admin list, not in personal dashboards. Registering an account does not count as a saved submission.
 
 To check: sign in, select **Add an entry**, save an unused username and email, and return to your dashboard. The new entry should appear. Sign in as a different account and confirm it does not appear there. Administrators can view the full username/email list at `/Admin`.
+
+## Activity 3 — Debugging and security review
+
+The final activity requires reviewing queries and output handling, fixing SQL injection and XSS risks where present, simulating attacks, and saving a findings summary. The review confirmed that parameterized queries, server-side validation, and Razor output encoding were already applied. Additional tests exercise those protections instead of introducing redundant sanitization.
+
+Two related gaps were reproduced and fixed: stale administrator sessions after an account change, and repository ownership integrity when a caller disabled foreign keys. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the evidence, fixes, attack coverage, dependency audit, and deployment limitations. The changes preserve existing data and the requested registration field-retention behavior.
+
+Activity 3 verification: 82 tests passed; the Release publish succeeded; the dependency advisory scan reported no known vulnerable packages. Restart the application to load the fixes.
+

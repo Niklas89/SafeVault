@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
@@ -6,7 +8,7 @@ using SafeVault;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages(options => options.Conventions.AuthorizePage("/Index"));
-builder.Services.AddSingleton<AuthenticationService>();
+builder.Services.AddSingleton<SafeVault.AuthenticationService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
     options.LoginPath = "/Login";
@@ -18,6 +20,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
     options.SlidingExpiration = false;
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var account = context.HttpContext.RequestServices.GetRequiredService<UserRepository>()
+            .FindAccount(context.Principal?.Identity?.Name ?? "");
+        if (account is null
+            || context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier) != account.Id.ToString()
+            || context.Principal?.FindFirstValue(ClaimTypes.Role) != account.Role)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    };
     options.Events.OnRedirectToAccessDenied = context =>
     {
         context.Response.StatusCode = 403;
@@ -71,4 +85,6 @@ app.MapRazorPages();
 app.Run();
 
 public partial class Program { }
+
+
 
