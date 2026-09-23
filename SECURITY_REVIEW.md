@@ -6,6 +6,18 @@ Reviewed application SQL, validation, Razor HTML text and attribute output, auth
 
 The activity asked for insecure SQL concatenation and unsanitized output to be identified and corrected **if present**. Neither pattern was found in the reviewed application paths. Existing protections were retained and tested rather than replaced with unnecessary character stripping.
 
+## How Copilot assisted with debugging
+
+Copilot assisted by reviewing the source code, reproducing suspected problems, implementing fixes, and checking the results:
+
+1. **Inspected the code paths.** Traced form input through validation, database queries, authentication, and Razor output. Confirmed that SQL parameters and HTML encoding were already applied, distinguishing existing protections from actual gaps.
+2. **Reproduced the gaps with tests.** Wrote failing tests showing that deleted or demoted administrators retained access through existing cookies and that disabled foreign keys allowed invalid submission ownership.
+3. **Applied targeted fixes.** Added checks against the current account when validating cookies and enforced foreign keys inside the repository. Resolved a compilation conflict between authentication classes introduced during the change.
+4. **Expanded attack coverage.** Added 14 regression cases covering SQL injection, reflected and stored XSS, stale sessions, and ownership integrity. Used isolated databases to protect existing application data.
+5. **Verified and explained the outcome.** Ran the full suite (82 passing tests), checked dependency advisories, and produced a Release build. Documented the findings, changes, and remaining deployment limitations so the results could be reviewed and reproduced.
+
+The assistance combined code changes with explanations and test evidence. It did not include a live deployment or a full penetration test.
+
 ## Findings
 
 | Area | Evidence | Result / action |
@@ -45,4 +57,5 @@ Continue using parameters for every SQL value. If future features allow user-sel
 This review verifies the covered source paths and attack cases, not an entire deployed environment. Before deploying, use the Production environment with HTTPS and appropriately protected database files and persistent data-protection keys. The local launch profile intentionally selects Development and permits HTTP. Review trusted reverse-proxy configuration if hosting behind one; the current limiter uses the direct client IP and is single-process. No live deployment or browser penetration scan was performed.
 
 Remaining scope limits include MFA, password reset, distributed/account-based throttling, and revocation of a copied session cookie on logout or password change. Logout clears the browser cookie, but a copied ticket can remain valid until its 20-minute expiration when the account identity and role are unchanged. Account deletion or a role change now invalidates that ticket on its next authenticated request. These limits must be assessed against the intended deployment rather than treating passing tests as a blanket security certification.
+
 

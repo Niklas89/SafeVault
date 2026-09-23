@@ -163,3 +163,7 @@ Two related gaps were reproduced and fixed: stale administrator sessions after a
 
 Activity 3 verification: 82 tests passed; the Release publish succeeded; the dependency advisory scan reported no known vulnerable packages. Restart the application to load the fixes.
 
+
+### How Copilot assisted
+
+Copilot reviewed the input-to-database and input-to-page paths, confirmed existing SQL injection and XSS defenses, reproduced the two identified gaps with failing tests, and applied targeted fixes. It added 14 security regression cases, verified that all 82 tests passed, checked dependency advisories, and produced a Release build. The detailed debugging process and its limitations are recorded in [SECURITY_REVIEW.md](SECURITY_REVIEW.md#how-codex-assisted-with-debugging).
